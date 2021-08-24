@@ -18,16 +18,17 @@ import time
 from os import path
 from threading import Thread
 
-import yaml
 from google.protobuf import json_format
-from yaml import safe_load
+from yaml import dump, safe_load
 
 import agt.messages_pb2 as proto
 from agt.bt_classic.adapter import BluetoothAdapter
 from agt.ble.adapter import BluetoothLEAdapter
 
-# global_config_path = path.join(path.join(path.dirname(path.dirname(path.abspath(__file__)))), '.agt.json')
 logger = logging.getLogger(__name__)
+
+# global_config_path = path.join(path.join(path.dirname(path.dirname(path.abspath(__file__)))), '.agt.json')
+global_config_path = '../' + sys.argv[0].split('.')[0]
 
 # ------------------------------------------------
 # Global Gadget Configuration constants
@@ -103,45 +104,61 @@ class AlexaGadget:
 
         # Check to make sure deviceType (amazonId) and deviceTypeSecret (alexaGadgetSecret) have been configured
         # self.device_type = self._get_value_from_config(_GADGET_SETTINGS, _AMAZON_ID)
-        self.device_type = self._get_value_from_config(_GADGET_SETTINGS, _AMAZON_ID)
-        if not self.device_type:
-            # if 'amazonId' is not specified, check for presence of 'deviceType' instead
-            self.device_type = self._get_value_from_config(_GADGET_SETTINGS, 'deviceType')
-            if self.device_type:
-                logger.info('Using deprecated deviceType in configuration. Please update your .ini to use ' + _AMAZON_ID)
-        if not self.device_type or self.device_type == 'YOUR_GADGET_AMAZON_ID':
-            raise Exception('Please specify your ' + _AMAZON_ID + ' in ' + self.gadget_config_path)
+        # self.device_type = self._get_value_from_config(_GADGET_SETTINGS, _AMAZON_ID)
+        self.device_type = self.secrets['amz_id']
+        # if not self.device_type:
+        #     # if 'amazonId' is not specified, check for presence of 'deviceType' instead
+        #     self.device_type = self._get_value_from_config(_GADGET_SETTINGS, 'deviceType')
+        #     if self.device_type:
+        #         logger.info('Using deprecated deviceType in configuration. Please update your .ini to use ' + _AMAZON_ID)
+        # if not self.device_type or self.device_type == 'YOUR_GADGET_AMAZON_ID':
+        #     raise Exception('Please specify your ' + _AMAZON_ID + ' in ' + self.gadget_config_path)
 
-        self.device_type_secret = self._get_value_from_config(_GADGET_SETTINGS, _ALEXA_GADGET_SECRET)
-        if not self.device_type_secret:
-            # if 'alexaGadgetSecret' is not specified, check for presence of 'deviceTypeSecret' instead 
-            self.device_type_secret = self._get_value_from_config(_GADGET_SETTINGS, 'deviceTypeSecret')
-            if self.device_type_secret:
-                logger.info('Using deprecated deviceTypeSecret in configuration. Please update your .ini to use ' + _ALEXA_GADGET_SECRET)
-        if not self.device_type_secret or self.device_type_secret == 'YOUR_GADGET_SECRET':
-            raise Exception('Please specify your ' + _ALEXA_GADGET_SECRET + ' in ' + self.gadget_config_path)
+        self.device_type_secret = self.secrets['amz_secret']
+        # self.device_type_secret = self._get_value_from_config(_GADGET_SETTINGS, _ALEXA_GADGET_SECRET)
+        # if not self.device_type_secret:
+        #     # if 'alexaGadgetSecret' is not specified, check for presence of 'deviceTypeSecret' instead
+        #     self.device_type_secret = self._get_value_from_config(_GADGET_SETTINGS, 'deviceTypeSecret')
+        #     if self.device_type_secret:
+        #         logger.info('Using deprecated deviceTypeSecret in configuration. Please update your .ini to use ' + _ALEXA_GADGET_SECRET)
+        # if not self.device_type_secret or self.device_type_secret == 'YOUR_GADGET_SECRET':
+        #     raise Exception('Please specify your ' + _ALEXA_GADGET_SECRET + ' in ' + self.gadget_config_path)
 
         # Get endpoint_id from the Gadget config
-        self.endpoint_id = self._get_value_from_config(_GADGET_SETTINGS, _ENDPOINT_ID)
-        if not self.endpoint_id:
-            self.endpoint_id = ('AGT' + self.radio_address)[:16]
+        # self.endpoint_id = self._get_value_from_config(_GADGET_SETTINGS, _ENDPOINT_ID)
+        # if not self.endpoint_id:
+        #     self.endpoint_id = ('AGT' + self.radio_address)[:16]
+
+        # below is original agt code, we're just skipping the check and creating it, todo add code to save this to yaml config file
+        self.endpoint_id = ('AGT' + self.radio_address)[:16]
 
         # Get friendly_name from the Gadget config
-        self.friendly_name = self._get_value_from_config(_GADGET_SETTINGS, _FRIENDLY_NAME)
-        if not self.friendly_name:
-            self.friendly_name = 'Gadget' + self.endpoint_id[-3:]
+        # self.friendly_name = self._get_value_from_config(_GADGET_SETTINGS, _FRIENDLY_NAME)
+        # if not self.friendly_name:
+        #     self.friendly_name = 'Gadget' + self.endpoint_id[-3:]
+
+        # I believe this name must match the "bluetooth friendly name", same as above, the original
+        # code attempted to retrieve from the ini config, todo add code to store in yaml config file
+        self.friendly_name = 'Gadget' + self.endpoint_id[-3:]
 
         # Get vendor_id from the Gadget config
-        vendor_id = self._get_value_from_config(_GADGET_SETTINGS, _VENDOR_ID)
-        if not vendor_id:
-            vendor_id = _DEFAULT_VENDOR_ID
-        elif vendor_id == '0000':
-            raise Exception('0000 is an invalid Vendor ID. Please use FFFF as a default, or your actual Vendor ID.')
+        # vendor_id = self._get_value_from_config(_GADGET_SETTINGS, _VENDOR_ID)
+        # if not vendor_id:
+        #     vendor_id = _DEFAULT_VENDOR_ID
+        # elif vendor_id == '0000':
+        #     raise Exception('0000 is an invalid Vendor ID. Please use FFFF as a default, or your actual Vendor ID.')
+
+        # same story as above todo add code to store in yaml config
+        # NB this is the bluetooth vendor ID
+        vendor_id = _DEFAULT_VENDOR_ID
 
         # Get product_id from the Gadget config
-        product_id = self._get_value_from_config(_GADGET_SETTINGS, _PRODUCT_ID)
-        if not product_id:
-            product_id = _DEFAULT_VENDOR_ID
+        # product_id = self._get_value_from_config(_GADGET_SETTINGS, _PRODUCT_ID)
+        # if not product_id:
+        #     product_id = _DEFAULT_VENDOR_ID
+
+        # same as above, todo add code to store/retrieve
+        product_id = _DEFAULT_VENDOR_ID
 
         # Initialize the Transport Adapter object
         if self._transport_mode == BT:
@@ -167,6 +184,7 @@ class AlexaGadget:
         """
         Main entry point.
         """
+
         # Parse the args passed in by the caller.
         parser = argparse.ArgumentParser()
         parser.add_argument('--pair', action='store_true', required=False,
@@ -372,28 +390,46 @@ class AlexaGadget:
         Called when Gadget receives Alexa.Discovery.Discover directive from the Echo device.
         """
         # Get values from the self.simple_gadget_config and set them to variables
-        model_name = self._get_value_from_config(_GADGET_SETTINGS, _MODEL_NAME)
-        if not model_name:
-            model_name = _DEFAULT_MODEL_NAME
+        # model_name = self._get_value_from_config(_GADGET_SETTINGS, _MODEL_NAME)
+        # if not model_name:
+        #     model_name = _DEFAULT_MODEL_NAME
 
-        device_token_encryption_type = self._get_value_from_config(_GADGET_SETTINGS, _DEVICE_TOKEN_ENCRYPTION_TYPE)
-        if not device_token_encryption_type:
-            device_token_encryption_type = _DEFAULT_DEVICE_TOKEN_ENCRYPTION_TYPE
+        # todo remove associated helpers when possible - also update
+        # the model name to something more meaningful
+        model_name = 'Alexa Gadget'
 
-        firmware_version = self._get_value_from_config(_GADGET_SETTINGS, _FIRMWARE_VERSION)
-        if not firmware_version:
-            firmware_version = _DEFAULT_FIRMWARE_VERSION
+        # device_token_encryption_type = self._get_value_from_config(_GADGET_SETTINGS, _DEVICE_TOKEN_ENCRYPTION_TYPE)
+        # if not device_token_encryption_type:
+        #     device_token_encryption_type = _DEFAULT_DEVICE_TOKEN_ENCRYPTION_TYPE
+
+        # todo remove helpers when possible and update
+        # this to read/set encryption more usefulLy
+        device_token_encryption_type = _DEFAULT_DEVICE_TOKEN_ENCRYPTION_TYPE
+
+        # firmware_version = self._get_value_from_config(_GADGET_SETTINGS, _FIRMWARE_VERSION)
+        # if not firmware_version:
+        #     firmware_version = _DEFAULT_FIRMWARE_VERSION
+
+        # todo remove helpers when possible and update this to
+        # be more meaningful
+        firmware_version = _DEFAULT_FIRMWARE_VERSION
 
         # Automatically generate the device token using endpoint_id and device_type_secret
         device_token = self._generate_token(self.endpoint_id, self.device_type_secret)
 
-        manufacturer_name = self._get_value_from_config(_GADGET_SETTINGS, _MANUFACTURER_NAME)
-        if not manufacturer_name:
-            manufacturer_name = _DEFAULT_MANUFACTURER_NAME
+        # manufacturer_name = self._get_value_from_config(_GADGET_SETTINGS, _MANUFACTURER_NAME)
+        # if not manufacturer_name:
+        #     manufacturer_name = _DEFAULT_MANUFACTURER_NAME
 
-        description = self._get_value_from_config(_GADGET_SETTINGS, _DESCRIPTION)
-        if not description:
-            description = _DEFAULT_DESCRIPTION
+        # todo same as above
+        manufacturer_name = _DEFAULT_MANUFACTURER_NAME
+
+        # description = self._get_value_from_config(_GADGET_SETTINGS, _DESCRIPTION)
+        # if not description:
+        #     description = _DEFAULT_DESCRIPTION
+
+        # todo same as above
+        description = _DEFAULT_DESCRIPTION
 
         # Generate the Discover.Response Protocol Buffer Message
         pb_event = proto.DiscoverResponseEvent()
@@ -415,32 +451,56 @@ class AlexaGadget:
         pb_endpoint.additionalIdentification.radioAddress = self.radio_address
         pb_endpoint.additionalIdentification.deviceToken = device_token
 
-        for section in self.gadget_config.sections():
-            if section == _GADGET_CAPABILITIES:
-                for (k, v) in self.gadget_config.items(section):
-                    pb_capability = pb_endpoint.capabilities.add()
-                    pb_capability.interface = k
-                    pb_capability.type = 'AlexaInterface'
-                    """
-                    If capability is something like:
-                        Alexa.Gadget.StateListener = 1.0 - timeinfo, timers, alarms, reminders, wakeword
-                    Then we will split on '-' and add supported types
+        # for section in self.gadget_config.sections():
+        #     if section == _GADGET_CAPABILITIES:
+        #         for (k, v) in self.gadget_config.items(section):
+        #             pb_capability = pb_endpoint.capabilities.add()
+        #             pb_capability.interface = k
+        #             pb_capability.type = 'AlexaInterface'
+        #             """
+        #             If capability is something like:
+        #                 Alexa.Gadget.StateListener = 1.0 - timeinfo, timers, alarms, reminders, wakeword
+        #             Then we will split on '-' and add supported types
+        #
+        #             Otherwise, it should be in this format:
+        #                 Alerts = 1.1
+        #             In which casse we simple pass only the version
+        #             """
+        #             if '-' in v:
+        #                 v = v.split('-')
+        #                 pb_capability.version = v[0].strip()
+        #                 if len(v) == 2:
+        #                     for st in v[1].split(','):
+        #                         supported_types = pb_capability.configuration.supportedTypes.add()
+        #                         supported_types.name = st.strip()
+        #             else:
+        #                 pb_capability.version = v.strip()
 
-                    Otherwise, it should be in this format:
-                        Alerts = 1.1
-                    In which casse we simple pass only the version
-                    """
-                    if '-' in v:
-                        v = v.split('-')
-                        pb_capability.version = v[0].strip()
-                        if len(v) == 2:
-                            for st in v[1].split(','):
-                                supported_types = pb_capability.configuration.supportedTypes.add()
-                                supported_types.name = st.strip()
-                    else:
-                        pb_capability.version = v.strip()
+        # the original code handled this via the ini config python package(s)
+        # slight modification to work w/new yaml config, this will likely need
+        # more adjustment as the original code parsed the string mapped to
+        for (k, v) in self.config['agt']['gadget_caps'].items():
+            pb_capability = pb_endpoint.capabilities.add()
+            pb_capability.interface = k
+            pb_capability.type = 'AlexaInterface'
+            """
+            If capability is something like:
+                Alexa.Gadget.StateListener = 1.0 - timeinfo, timers, alarms, reminders, wakeword
+            Then we will split on '-' and add supported types
 
-        self.send_event(pb_event)
+            Otherwise, it should be in this format:
+                Alerts = 1.1
+            In which casse we simple pass only the version
+            """
+            if '-' in v:
+                v = v.split('-')
+                pb_capability.version = v[0].strip()
+                if len(v) == 2:
+                    for st in v[1].split(','):
+                        supported_types = pb_capability.configuration.supportedTypes.add()
+                        supported_types.name = st.strip()
+            else:
+                pb_capability.version = v.strip()
 
     # ------------------------------------------------
     # Helpers
@@ -547,7 +607,7 @@ class AlexaGadget:
 
         :param gadget_config_path:
         """
-        logger.info(f'config path in load gadget configpath: {gadget_config_path}')
+
         self.gadget_config_path = gadget_config_path
         if not gadget_config_path:
             # If no config file was passed in the constructor, then look for a file with the same as the .py file
@@ -601,11 +661,20 @@ class AlexaGadget:
         """
         Writes the bluetooth address of the paired Echo device to disk
         """
-        with open(global_config_path, "r") as read_file:
-            data = json.load(read_file)
-        with open(global_config_path, "w+") as write_file:
-            data[_ECHO_BLUETOOTH_ADDRESS] = self._peer_device_bt_addr
-            json.dump(data, write_file)
+        # with open(global_config_path, "r") as read_file:
+        #     data = json.load(read_file)
+        # with open(global_config_path, "w+") as write_file:
+        #     data[_ECHO_BLUETOOTH_ADDRESS] = self._peer_device_bt_addr
+        #     json.dump(data, write_file)
+
+        # read in the config
+        with open(self.config_file) as r:
+            config = safe_load(r)
+
+        # then update it in memory and write that back to file
+        with open(self.config_file, 'w') as w:
+            config['agt']['echo_address'] = self._peer_device_bt_addr
+            dump(config, w)
 
     def _generate_token(self, device_id, device_token):
         """

@@ -44,10 +44,17 @@ class LedController(AlexaGadget):
 
     def __init__(self):
 
-        config_file = __file__.split('.')[0] + '.yaml'
+        # todo fix the self.config_file attribute to be part of
+        # alexagadget class/object, and just access it here?
 
-        with open(config_file) as f:
+        self.config_file = path.abspath(__file__).split('.')[0] + '.yaml'
+
+        with open(self.config_file) as f:
             self.config = yaml.safe_load(f)
+
+        with open('secrets.yaml') as f:
+            self.secrets = yaml.safe_load(f)
+
         # the parent init method handles bluetooth details and other
         # init tasks we need
         super().__init__()
