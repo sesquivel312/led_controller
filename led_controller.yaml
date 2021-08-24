@@ -1,0 +1,13 @@
+app:
+  npixels: 82
+  rgb_order: 'GRBW'
+  brightness: 0.1
+agt:
+  gadget_settings: # from the ini section [GadgetSettings]
+    amz_id: YOUR_GADGET_ID_HERE
+    amz_secret: YOUR_GADGET_SECRET_HER
+  gadget_caps: # this is from the ini file section [GadgetCapabilities]
+    custom.LedController = 1.0
+  # the items below would be stored in the .agt.json file
+  transport_mode: 'BT' # _TRANSPORT_MODE =  'transportMode', alternative is 'BLE'
+  echo_address: null # _ECHO_BLUETOOTH_ADDRESS = 'echoBluetoothAddress'
