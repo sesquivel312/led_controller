@@ -12,6 +12,7 @@ import configparser
 import hashlib
 import json
 import logging.config
+import pdb # DELETE
 import signal
 import sys
 import time
@@ -162,13 +163,19 @@ class AlexaGadget:
 
         # Initialize the Transport Adapter object
         if self._transport_mode == BT:
-            self._bluetooth = BluetoothAdapter(self.friendly_name, vendor_id, product_id,
-                                                      self._on_bluetooth_data_received,
-                                                      self._on_bluetooth_connected,
-                                                      self._on_bluetooth_disconnected)
+            self._bluetooth = BluetoothAdapter(self.friendly_name,
+                                               vendor_id,
+                                               product_id,
+                                               self._on_bluetooth_data_received,
+                                               self._on_bluetooth_connected,
+                                               self._on_bluetooth_disconnected)
         elif self._transport_mode == BLE:
-            self._bluetooth = BluetoothLEAdapter(self.endpoint_id, self.friendly_name, self.device_type,
-                                                 vendor_id, product_id, self._on_bluetooth_data_received,
+            self._bluetooth = BluetoothLEAdapter(self.endpoint_id,
+                                                 self.friendly_name,
+                                                 self.device_type,
+                                                 vendor_id,
+                                                 product_id,
+                                                 self._on_bluetooth_data_received,
                                                  self._on_bluetooth_connected,
                                                  self._on_bluetooth_disconnected)
 
@@ -224,6 +231,7 @@ class AlexaGadget:
                 self._peer_device_bt_addr = None
 
             # start the bluetooth daemon
+            # pdb.set_trace() # DELETE
             self.start()
 
             # Set discoverable if bluetooth address is not in the configuration file.
